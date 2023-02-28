@@ -11,13 +11,27 @@ begin
 end
 
 # ╔═╡ aeeee39d-ed89-4c40-9d24-13aae0ef46e0
-begin
-	dist = Normal(0, 1)
-	bins = -4:0.2:4
+function discretize_dist(dist, bins)
 	d = diff(cdf(dist, bins))
 	P = d * transpose(d)
-	heatmap(P)
+	return P
 end
+
+# ╔═╡ e1948132-ddcc-4824-90ff-d4695768bede
+heatmap(
+	discretize_dist(
+		Normal(0, 1), 
+		-4:0.2:4
+	)
+)
+
+# ╔═╡ b98f5537-fd2a-4ae9-b89a-c4f81e9bf404
+heatmap(
+	discretize_dist(
+		Normal(0, 1), 
+		-4:0.2:4
+	)
+)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1029,5 +1043,7 @@ version = "1.4.1+0"
 # ╔═╡ Cell order:
 # ╠═75bb2fb6-b751-11ed-343c-1f1248676ddd
 # ╠═aeeee39d-ed89-4c40-9d24-13aae0ef46e0
+# ╠═e1948132-ddcc-4824-90ff-d4695768bede
+# ╠═b98f5537-fd2a-4ae9-b89a-c4f81e9bf404
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
