@@ -12,19 +12,19 @@ using NLsolve
 
 # ╔═╡ 3b489649-0f47-4aec-bbee-552bf911317a
 struct Bandit_Process
-	P # transition matrix
-	r # reward vector
-	s₀ # initial state
-	β # discount factor
+	P::Matrix{Float64} # transition matrix
+	r::Vector{Float64} # reward vector
+	s₀::Int64 # initial state
+	β::Float64 # discount factor
 end
 
 # ╔═╡ 21b6f664-5309-4f39-94b1-33b43345347f
 struct Katehakis_Veinott_Restart_Formulation
-	Q⁰ # transition matrix for restart option
-	r⁰ # instaneous reward for restart option
-	Q¹ # transition matrix for continuation option
-	r¹ # instaneous reward for continuation option
-	β # discount factor
+	Q⁰::Matrix{Float64} # transition matrix for restart option
+	r⁰::Vector{Float64} # instaneous reward for restart option
+	Q¹::Matrix{Float64} # transition matrix for continuation option
+	r¹::Vector{Float64} # instaneous reward for continuation option
+	β::Float64 # discount factor
 	
 	function Katehakis_Veinott_Restart_Formulation(bp::Bandit_Process)
 		P, r, α, β = bp.P, bp.r, bp.s₀, bp.β
@@ -47,7 +47,7 @@ end
 function solve(bp::Bandit_Process)
 	kv = Katehakis_Veinott_Restart_Formulation(bp)
 
-	function f(v, kv::Katehakis_Veinott_Restart_Formulation)
+	function f(v::Vector{Float64}, kv::Katehakis_Veinott_Restart_Formulation)
 		return max.(
 			kv.r⁰ + kv.β * kv.Q⁰ * v, 
 			kv.r¹ + kv.β * kv.Q¹ * v,
