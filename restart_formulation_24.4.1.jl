@@ -10,26 +10,62 @@ using NLsolve
 # ╔═╡ 64e1acc8-b743-11ed-2be1-4ff3a87d90f8
 # 24.1.1 Restart Formulation (Katehakis and Veinott)
 
-# ╔═╡ e250cfc1-e1a0-4fed-a853-9bb58ebbcc0c
-begin
-	r⁰ = [19.0, 19.0, 19.0, 19.0]
-	Q⁰ = [0.5 0 0.1 0.4; 0.5 0 0.1 0.4; 0.5 0 0.1 0.4; 0.5 0 0.1 0.4;]
+# ╔═╡ 3b489649-0f47-4aec-bbee-552bf911317a
+struct Bandit_Process
+	P # transition matrix
+	r # reward vector
+	s₀ # initial state
+	β # discount factor
+end
+
+# ╔═╡ 21b6f664-5309-4f39-94b1-33b43345347f
+struct Katehakis_Veinott_Restart_Formulation
+	Q⁰ # transition matrix for restart option
+	r⁰ # instaneous reward for restart option
+	Q¹ # transition matrix for continuation option
+	r¹ # instaneous reward for continuation option
+	β # discount factor
 	
-	r¹ = [16.0, 19.0, 30.0, 4.0]
-	Q¹ = [0.1 0 0.8 0.1; 0.5 0 0.1 0.4; 0.2 0.6 0 0.2; 0 0.8 0 0.2]
-	
-	β = 0.75
-	
-	function f(v)
-		v₁ = r⁰ + β * Q⁰ * v # left side of max
-		v₂ = r¹ + β * Q¹ * v # right side of max
-		v′ = max.(v₁, v₂) # element-wise max
-		return v′
+	function Katehakis_Veinott_Restart_Formulation(bp::Bandit_Process)
+		P, r, α, β = bp.P, bp.r, bp.s₀, bp.β
+		
+		Q⁰ = similar(P)
+		Q⁰ .= P[α:α, :] # each row of Q0 equal to a-th row of P
+
+		r⁰ = similar(r)
+		r⁰ .= r[α] # each element of r0 equal to a-th element of r
+
+		Q¹ = P
+
+		r¹ = r
+		
+		return new(Q⁰, r⁰, Q¹, r¹, β)
 	end
 end
 
-# ╔═╡ 326a0a7d-4a77-4950-91c1-bfae96ffe1cc
-fixedpoint(f, [50.0, 50.0, 50.0, 50.0])
+# ╔═╡ e250cfc1-e1a0-4fed-a853-9bb58ebbcc0c
+function f(v, kv::Katehakis_Veinott_Restart_Formulation)
+	return max.(
+		kv.r⁰ + kv.β * kv.Q⁰ * v, 
+		kv.r¹ + kv.β * kv.Q¹ * v,
+	) # max. is element-wise max
+end
+
+# ╔═╡ ba3ed69c-146d-4137-bbe5-3c731a742c07
+paper_ex = Katehakis_Veinott_Restart_Formulation(
+	Bandit_Process(
+		[0.1 0 0.8 0.1; 0.5 0 0.1 0.4; 0.2 0.6 0 0.2; 0 0.8 0 0.2],
+		[16.0, 19.0, 30.0, 4.0],
+		2,
+		0.75,
+	)
+)
+
+# ╔═╡ 5226db9a-d99e-483a-ac39-b091e1592ef7
+f′(v) = f(v, paper_ex)
+
+# ╔═╡ aacb69da-d136-4056-91d3-027f57c75552
+fixedpoint(f′, [50.0, 50.0, 50.0, 50.0])
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -432,7 +468,11 @@ version = "17.4.0+0"
 # ╔═╡ Cell order:
 # ╠═64e1acc8-b743-11ed-2be1-4ff3a87d90f8
 # ╠═e03bb089-a27c-453a-b4bd-d572c81efada
+# ╠═3b489649-0f47-4aec-bbee-552bf911317a
+# ╠═21b6f664-5309-4f39-94b1-33b43345347f
 # ╠═e250cfc1-e1a0-4fed-a853-9bb58ebbcc0c
-# ╠═326a0a7d-4a77-4950-91c1-bfae96ffe1cc
+# ╠═ba3ed69c-146d-4137-bbe5-3c731a742c07
+# ╠═5226db9a-d99e-483a-ac39-b091e1592ef7
+# ╠═aacb69da-d136-4056-91d3-027f57c75552
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
