@@ -82,7 +82,10 @@ begin
 	policy = RandomPolicy(mdp, rng=MersenneTwister(2))
 	sim = RolloutSimulator(rng=MersenneTwister(3), max_steps=100)
 	
-	simulate(sim, mdp, policy, 1)
+	results = simulate(sim, mdp, policy, 1)
+	
+	print(results)
+	
 	@test has_consistent_transition_distributions(mdp)
 
 	RandomMAB()
