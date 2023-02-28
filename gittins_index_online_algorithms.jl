@@ -50,8 +50,8 @@ begin
 end
 
 # ╔═╡ de432222-402d-4fad-bbc3-66fa5c139948
+### 24.1.1 Restart Formulation (Katehakis and Veinott)
 begin
-	### 24.1.1 Restart Formulation (Katehakis and Veinott)
 	struct Katehakis_Veinott_Restart_Formulation
 		Q⁰::Matrix{Float64} # transition matrix for restart option
 		r⁰::Vector{Float64} # instaneous reward for restart option
