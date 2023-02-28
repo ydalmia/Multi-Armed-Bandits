@@ -43,16 +43,25 @@ struct Katehakis_Veinott_Restart_Formulation
 	end
 end
 
-# ╔═╡ e250cfc1-e1a0-4fed-a853-9bb58ebbcc0c
-function f(v, kv::Katehakis_Veinott_Restart_Formulation)
-	return max.(
-		kv.r⁰ + kv.β * kv.Q⁰ * v, 
-		kv.r¹ + kv.β * kv.Q¹ * v,
-	) # max. is element-wise max
+# ╔═╡ e8c813d7-13f2-4719-a211-2250ea5f44d7
+function solve(bp::Bandit_Process)
+	kv = Katehakis_Veinott_Restart_Formulation(bp)
+
+	function f(v, kv::Katehakis_Veinott_Restart_Formulation)
+		return max.(
+			kv.r⁰ + kv.β * kv.Q⁰ * v, 
+			kv.r¹ + kv.β * kv.Q¹ * v,
+		) # element-wise max
+	end
+	
+	f′(v) = f(v, kv)
+	v₀ = [50.0, 50.0, 50.0, 50.0]
+	sol = fixedpoint(f′, v₀)
+	return sol
 end
 
-# ╔═╡ ba3ed69c-146d-4137-bbe5-3c731a742c07
-paper_ex = Katehakis_Veinott_Restart_Formulation(
+# ╔═╡ c67869a5-629e-4ba1-95a6-304c13311f44
+sol = solve(
 	Bandit_Process(
 		[0.1 0 0.8 0.1; 0.5 0 0.1 0.4; 0.2 0.6 0 0.2; 0 0.8 0 0.2],
 		[16.0, 19.0, 30.0, 4.0],
@@ -60,12 +69,6 @@ paper_ex = Katehakis_Veinott_Restart_Formulation(
 		0.75,
 	)
 )
-
-# ╔═╡ 5226db9a-d99e-483a-ac39-b091e1592ef7
-f′(v) = f(v, paper_ex)
-
-# ╔═╡ aacb69da-d136-4056-91d3-027f57c75552
-fixedpoint(f′, [50.0, 50.0, 50.0, 50.0])
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -470,9 +473,7 @@ version = "17.4.0+0"
 # ╠═e03bb089-a27c-453a-b4bd-d572c81efada
 # ╠═3b489649-0f47-4aec-bbee-552bf911317a
 # ╠═21b6f664-5309-4f39-94b1-33b43345347f
-# ╠═e250cfc1-e1a0-4fed-a853-9bb58ebbcc0c
-# ╠═ba3ed69c-146d-4137-bbe5-3c731a742c07
-# ╠═5226db9a-d99e-483a-ac39-b091e1592ef7
-# ╠═aacb69da-d136-4056-91d3-027f57c75552
+# ╠═e8c813d7-13f2-4719-a211-2250ea5f44d7
+# ╠═c67869a5-629e-4ba1-95a6-304c13311f44
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
