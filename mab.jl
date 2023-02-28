@@ -13,6 +13,7 @@ begin
 	using POMDPTools
 	using Distributions
 	using POMDPTesting: has_consistent_transition_distributions
+	using LinearIndex
 end
 
 # ╔═╡ 0a68d3ba-371e-4e90-a1aa-300e51b3fe71
@@ -31,36 +32,36 @@ https://github.com/JuliaPOMDP/POMDPs.jl/blob/4b655ec340d22d676cb2f49d2bcb81fb954
 begin
 	mutable struct MAB <: MDP{Int64, Int64}
 		n::Int64 # number of arms
-		m::Array{Int64} # state space cardinality for each arm
-	    T::Array{Array{Float64, 2}} # each arm has bandit process, n x Sp x S
-	    R::Array{Array{Float64}} # n x S
+		m::Tuple{Int64} # state space cardinality for each arm
+	    T::Tuple{Array{Float64, 2}} # each arm has bandit process, n x Sp x S
+	    R::Tuple{Array{Float64}} # n x S
 	    γ::Float64 # Discount Factor
 	end
 	
 	POMDPs.states(p::MAB) = 1:prod(m) # m^n states (is why gittins index useful!)
 	POMDPs.actions(p::MAB) = 1:n # choose to pull exactly 1 of n arms
 	
-	POMDPs.stateindex(p::MAB, s::Int64) = s
+	POMDPs.stateindex(p::MAB, s::Tuple{Int64}) = s
 	POMDPs.actionindex(p::MAB, a::Int64) = a
 	
 	POMDPs.discount(p::MAB) = p.γ
 	
 	function POMDPs.transition(p::MAB, s::Int64, a::Int64) 
 		# TODO:
+		spa = p.T[a][:, s] # resulting distribution for the arm we pulled 
 
-		# so all states except for the arm pulled should remain constant
-		# the state for the arm pulled should evolve.
-
-		# we need to map the m^n states somehow
-		# probs need to use cartesian/linear coordinates
+		# categorical distribution over these states:
+		# s1, ..., spa_1, ..., sn
+		# s1, ..., spa_j, ..., sn
+		# s1, ..., spa_m, ..., sn
 		
+		# 0 everywhere else
 		return None
 	end
 	
 	function POMDPs.reward(p::MAB, s::Int64, a::Int64)
 		# TODO:
 
-		# ugh.
 	end
 	
 	POMDPs.initialstate(p::MAB) = DiscreteDistribution(ones(length(states(p)))./length(states(p)))
