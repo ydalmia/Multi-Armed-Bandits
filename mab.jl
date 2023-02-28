@@ -27,11 +27,52 @@ https://github.com/JuliaPOMDP/POMDPs.jl/blob/4b655ec340d22d676cb2f49d2bcb81fb954
 
 =#
 
+# ╔═╡ b478ad03-001f-4c12-a427-a8f3316ce22d
+begin
+	mutable struct MAB <: MDP{Int64, Int64}
+		n::Int64 # number of arms
+		m::Array{Int64} # state space cardinality for each arm
+	    T::Array{Array{Float64, 2}} # each arm has bandit process, n x Sp x S
+	    R::Array{Array{Float64}} # n x S
+	    γ::Float64 # Discount Factor
+	end
+	
+	POMDPs.states(p::MAB) = 1:prod(m) # m^n states (is why gittins index useful!)
+	POMDPs.actions(p::MAB) = 1:n # choose to pull exactly 1 of n arms
+	
+	POMDPs.stateindex(p::MAB, s::Int64) = s
+	POMDPs.actionindex(p::MAB, a::Int64) = a
+	
+	POMDPs.discount(p::MAB) = p.γ
+	
+	function POMDPs.transition(p::MAB, s::Int64, a::Int64) 
+		# TODO:
+
+		# so all states except for the arm pulled should remain constant
+		# the state for the arm pulled should evolve.
+
+		# we need to map the m^n states somehow
+		# probs need to use cartesian/linear coordinates
+		
+		return None
+	end
+	
+	function POMDPs.reward(p::MAB, s::Int64, a::Int64)
+		# TODO:
+
+		# ugh.
+	end
+	
+	POMDPs.initialstate(p::MAB) = DiscreteDistribution(ones(length(states(p)))./length(states(p)))
+end
+
 # ╔═╡ 3d363373-0070-4cfb-92c0-4697fdc8e2a9
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	mutable struct BanditProcess <: MDP{Int64, Int64}
 	    T::Array{Float64, 2} # SPxS
-	    R::Vector{Float64} # S
+	    R::Vector{Float64} # SxA
 	    γ::Float64
 	end
 	
@@ -49,15 +90,19 @@ begin
 	
 	POMDPs.initialstate(p::BanditProcess) = DiscreteDistribution(ones(length(states(p)))./length(states(p)))
 end
+  ╠═╡ =#
 
 # ╔═╡ 8be55859-92c2-40c2-93c3-4f5ee23d8d4d
+#=╠═╡
 BanditProcess(
 	[0.5 0.5; 0.5 0.5],
 	[1.0, 2.0],
 	0.7
 )
+  ╠═╡ =#
 
 # ╔═╡ 85a5f0ce-9bc1-4629-b132-4d85eb4fbccb
+#=╠═╡
 begin
 	function RandomMAB(ns::Int64, γ::Float64; rng::AbstractRNG=Random.GLOBAL_RNG)
 	    # random dynamics
@@ -72,8 +117,10 @@ begin
 	end
 	RandomMAB() = RandomMAB(10, 0.9)
 end
+  ╠═╡ =#
 
 # ╔═╡ e2df5e3a-8cf2-43dd-8d7d-d77c2af411bd
+#=╠═╡
 begin
 	ns = 10
 	γ = 0.95
@@ -90,6 +137,7 @@ begin
 
 	RandomMAB()
 end
+  ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -116,7 +164,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "103558084e5253a27d5187491c0a45d4af9f768a"
+project_hash = "4f21f86f5cf4c2d8e93c91e8da868b12a7c0426b"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -760,6 +808,7 @@ version = "17.4.0+0"
 # ╔═╡ Cell order:
 # ╠═0a68d3ba-371e-4e90-a1aa-300e51b3fe71
 # ╠═0e0a4ea6-b794-11ed-380e-af7e5a72d568
+# ╠═b478ad03-001f-4c12-a427-a8f3316ce22d
 # ╠═3d363373-0070-4cfb-92c0-4697fdc8e2a9
 # ╠═8be55859-92c2-40c2-93c3-4f5ee23d8d4d
 # ╠═85a5f0ce-9bc1-4629-b132-4d85eb4fbccb
