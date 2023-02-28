@@ -55,7 +55,7 @@ function solve(bp::Bandit_Process)
 	end
 	
 	f′(v) = f(v, kv)
-	v₀ = [50.0, 50.0, 50.0, 50.0]
+	v₀ = [50.0, 50.0, 50.0, 50.0] # TODO: appropriate initialization
 	sol = fixedpoint(f′, v₀)
 	return sol
 end
