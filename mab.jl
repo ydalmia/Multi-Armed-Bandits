@@ -13,29 +13,7 @@ begin
 	using POMDPTools
 	using Distributions
 	using POMDPTesting: has_consistent_transition_distributions
-	using LinearIndex
 end
-
-# ╔═╡ 0a68d3ba-371e-4e90-a1aa-300e51b3fe71
-#= 
-Author: Yash Dalmia
-
-Inspired by the following sources:
-
-https://github.com/JuliaPOMDP/POMDPModels.jl/blob/232d5bf6e37fb7b5a3fa569cd859070cd550f1d0/test/random.jl
-
-https://github.com/JuliaPOMDP/POMDPs.jl/blob/4b655ec340d22d676cb2f49d2bcb81fb95440f9c/src/pomdp.jl#L13-L20
-
-=#
-
-# ╔═╡ 99f6af7d-673e-4153-a54f-c3f86a0c8521
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	x = (1, 2, 2)
-	LinearIndices((3, 3, 3))[x...]
-end
-  ╠═╡ =#
 
 # ╔═╡ b478ad03-001f-4c12-a427-a8f3316ce22d
 begin
@@ -817,9 +795,7 @@ version = "17.4.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═0a68d3ba-371e-4e90-a1aa-300e51b3fe71
 # ╠═0e0a4ea6-b794-11ed-380e-af7e5a72d568
-# ╠═99f6af7d-673e-4153-a54f-c3f86a0c8521
 # ╠═b478ad03-001f-4c12-a427-a8f3316ce22d
 # ╠═3d363373-0070-4cfb-92c0-4697fdc8e2a9
 # ╠═8be55859-92c2-40c2-93c3-4f5ee23d8d4d
