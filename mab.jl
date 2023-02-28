@@ -41,7 +41,7 @@ begin
 			return Tuple(sp)
 		end
 		
-		states = map(i -> f(s, a, i), 1:m[a])
+		states = [f(s, a, i) for i in 1:m[a]]
 		probabilities = p.T[a][:, s]
 		return SparseCat(states, probabilities)
 	end
