@@ -14,26 +14,33 @@ end
 # ╔═╡ 25450a63-9b6b-4e67-8402-fe535b4bd29f
 begin
 	model = Model(HiGHS.Optimizer)
+	
 	@variable(model, z[1:5])
+	
 	@constraint(model, [i in 1:length(z) - 1], z[i] >= 0.0)
+	
 	r = Float64[16.0, 19.0, 30.0, 4.0]
-	A = Float64[[0.925 0.0 -0.6 -0.075 1.0]; [-0.375 1.0 -0.075 -0.3 1.0]; [-0.15 -0.45 0.0 -0.15 1.0]; [0.0 -0.6 0.0 0.85 1.0]]
+	
+	A = Float64[
+		[0.925 0.0 -0.6 -0.075 1.0]; 
+		[-0.375 1.0 -0.075 -0.3 1.0]; 
+		[-0.15 -0.45 0.0 -0.15 1.0]; 
+		[0.0 -0.6 0.0 0.85 1.0];
+	]
+	
 	@constraint(model, A * z .>= r)
+	
 	c = Float64[0.25, 0.25, 0.25, 0.25, 4.0]
+	
 	@objective(model, Min, c ⋅ z)
 end
 
 # ╔═╡ e3f0f111-cfd2-49c1-a1ea-0d5bd2741f16
-print(model)
-
-# ╔═╡ 925a6ef5-1b90-4802-aca4-1477429bdb61
-optimize!(model)
-
-# ╔═╡ 89837208-f674-4e1b-b1ad-d03971a6ed42
-value.(z)
-
-# ╔═╡ b5eafc67-236d-4bd2-8708-719ac74f501f
-termination_status(model)
+begin
+	println(model)
+	optimize!(model)
+	println(value.(z))
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -431,8 +438,5 @@ version = "17.4.0+0"
 # ╠═26d7a01a-0dd7-49b0-ae67-a3bd7748e63c
 # ╠═25450a63-9b6b-4e67-8402-fe535b4bd29f
 # ╠═e3f0f111-cfd2-49c1-a1ea-0d5bd2741f16
-# ╠═925a6ef5-1b90-4802-aca4-1477429bdb61
-# ╠═89837208-f674-4e1b-b1ad-d03971a6ed42
-# ╠═b5eafc67-236d-4bd2-8708-719ac74f501f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
