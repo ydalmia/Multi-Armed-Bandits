@@ -25,7 +25,7 @@ begin
 	    γ::Float64 # Discount Factor
 	end
 	
-	POMDPs.states(p::MAB) = 1:prod(m) # m^n states (= gittins index useful!)
+	POMDPs.states(p::MAB) = 1:prod(m) # m^n states (gittins index useful!)
 	POMDPs.actions(p::MAB) = 1:n # choose to pull exactly 1 of n arms
 	
 	POMDPs.stateindex(p::MAB, s::Tuple{Int64}) = LinearIndices(m)[s...]
@@ -55,78 +55,23 @@ begin
 	end 
 end
 
-# ╔═╡ 3d363373-0070-4cfb-92c0-4697fdc8e2a9
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	mutable struct BanditProcess <: MDP{Int64, Int64}
-	    T::Array{Float64, 2} # SPxS
-	    R::Vector{Float64} # SxA
-	    γ::Float64
-	end
+# ╔═╡ 3fbebc3f-b1a9-4439-a6b9-11cf64805ad9
+# begin
+# 	ns = 10
+# 	γ = 0.95
 	
-	POMDPs.states(p::BanditProcess) = 1:size(p.T, 1)
-	POMDPs.actions(p::BanditProcess) = [1]
+# 	mdp = RandomMAB(ns, γ, rng=MersenneTwister(1))
+# 	policy = RandomPolicy(mdp, rng=MersenneTwister(2))
+# 	sim = RolloutSimulator(rng=MersenneTwister(3), max_steps=100)
 	
-	POMDPs.stateindex(p::BanditProcess, s::Int64) = s
-	POMDPs.actionindex(p::BanditProcess, a::Int64) = a
+# 	results = simulate(sim, mdp, policy, 1)
 	
-	POMDPs.discount(p::BanditProcess) = p.γ
+# 	print(results)
 	
-	POMDPs.transition(p::BanditProcess, s::Int64, a::Int64) = Categorical(p.T[:, s])
-	
-	POMDPs.reward(p::BanditProcess, s::Int64, a::Int64) = p.R[s]
-	
-	POMDPs.initialstate(p::BanditProcess) = DiscreteDistribution(ones(length(states(p)))./length(states(p)))
-end
-  ╠═╡ =#
+# 	@test has_consistent_transition_distributions(mdp)
 
-# ╔═╡ 8be55859-92c2-40c2-93c3-4f5ee23d8d4d
-#=╠═╡
-BanditProcess(
-	[0.5 0.5; 0.5 0.5],
-	[1.0, 2.0],
-	0.7
-)
-  ╠═╡ =#
-
-# ╔═╡ 85a5f0ce-9bc1-4629-b132-4d85eb4fbccb
-#=╠═╡
-begin
-	function RandomMAB(ns::Int64, γ::Float64; rng::AbstractRNG=Random.GLOBAL_RNG)
-	    # random dynamics
-	    T = rand(rng, ns, ns)
-	    # normalize
-	    for i = 1:ns
-	        T[:,i] /= sum(T[:,i])
-	    end
-	    # random rewards [-0.5, 0.5]
-	    R = rand(rng, ns) .- 0.5
-	    return BanditProcess(T, R, γ)
-	end
-	RandomMAB() = RandomMAB(10, 0.9)
-end
-  ╠═╡ =#
-
-# ╔═╡ e2df5e3a-8cf2-43dd-8d7d-d77c2af411bd
-#=╠═╡
-begin
-	ns = 10
-	γ = 0.95
-	
-	mdp = RandomMAB(ns, γ, rng=MersenneTwister(1))
-	policy = RandomPolicy(mdp, rng=MersenneTwister(2))
-	sim = RolloutSimulator(rng=MersenneTwister(3), max_steps=100)
-	
-	results = simulate(sim, mdp, policy, 1)
-	
-	print(results)
-	
-	@test has_consistent_transition_distributions(mdp)
-
-	RandomMAB()
-end
-  ╠═╡ =#
+# 	RandomMAB()
+# end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -797,9 +742,6 @@ version = "17.4.0+0"
 # ╔═╡ Cell order:
 # ╠═0e0a4ea6-b794-11ed-380e-af7e5a72d568
 # ╠═b478ad03-001f-4c12-a427-a8f3316ce22d
-# ╠═3d363373-0070-4cfb-92c0-4697fdc8e2a9
-# ╠═8be55859-92c2-40c2-93c3-4f5ee23d8d4d
-# ╠═85a5f0ce-9bc1-4629-b132-4d85eb4fbccb
-# ╠═e2df5e3a-8cf2-43dd-8d7d-d77c2af411bd
+# ╠═3fbebc3f-b1a9-4439-a6b9-11cf64805ad9
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
