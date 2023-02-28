@@ -5,12 +5,7 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ e03bb089-a27c-453a-b4bd-d572c81efada
-begin
-	using NLsolve
-	using JuMP
-	using HiGHS
-	using LinearAlgebra
-end
+using NLsolve, JuMP, HiGHS, LinearAlgebra
 
 # ╔═╡ 3b489649-0f47-4aec-bbee-552bf911317a
 struct Bandit_Process
@@ -21,100 +16,103 @@ struct Bandit_Process
 	β::Float64 # discount factor
 end
 
-# ╔═╡ 4b240856-19d2-499a-8ea3-db06ccd859d4
-### 24.4.2 Linear Programming Formulation (Chen and Katehakis)
-
 # ╔═╡ 68a9cbec-3357-42f4-bbcb-0762e7887b9d
-struct Chen_Katehakis_Linear_Programming
-	lp::Model # linear programming model
-	
-	function Chen_Katehakis_Linear_Programming(bp::Bandit_Process)
-		m, P, r, α, β = bp.m, bp.P, bp.r, bp.s₀, bp.β
-
-		h = ones(m)
-		h[α] -= 1.0
-		c = hcat((1.0 - β) * transpose(ones(m)), [m])
-		M = hcat(diagm(h) - β * P, ones(m, 1))
-
-		lp = Model()
-		@variable(lp, y[1:4] >= 0.0)
-		@variable(lp, z)
-		Z = transpose(hcat(transpose(y), z))
-		@constraint(lp, M * Z .>= r)
-		@objective(lp, Min, dot(c, Z))
+### 24.4.2 Linear Programming Formulation (Chen and Katehakis)
+begin
+	struct Chen_Katehakis_Linear_Programming
+		lp::Model # linear programming model
 		
-		return new(lp)
+		function Chen_Katehakis_Linear_Programming(bp::Bandit_Process)
+			m, P, r, α, β = bp.m, bp.P, bp.r, bp.s₀, bp.β
+	
+			h = ones(m)
+			h[α] -= 1.0
+			c = hcat((1.0 - β) * transpose(ones(m)), [m])
+			M = hcat(diagm(h) - β * P, ones(m, 1))
+	
+			lp = Model()
+			@variable(lp, y[1:4] >= 0.0)
+			@variable(lp, z)
+			Z = transpose(hcat(transpose(y), z))
+			@constraint(lp, M * Z .>= r)
+			@objective(lp, Min, dot(c, Z))
+			
+			return new(lp)
+		end
+	end
+
+	function solve(formulation::Chen_Katehakis_Linear_Programming)
+		set_optimizer(formulation.lp, HiGHS.Optimizer)
+		optimize!(formulation.lp)
+		gi = value(formulation.lp[:z])
+		return gi
 	end
 end
 
 # ╔═╡ de432222-402d-4fad-bbc3-66fa5c139948
-function solve(formulation::Chen_Katehakis_Linear_Programming)
-	set_optimizer(formulation.lp, HiGHS.Optimizer)
-	optimize!(formulation.lp)
-	return value(formulation.lp[:z])
-end
-
-# ╔═╡ ea750923-f350-4cb4-b80f-7d75e28e6386
-### 24.1.1 Restart Formulation (Katehakis and Veinott)
-
-# ╔═╡ 21b6f664-5309-4f39-94b1-33b43345347f
-struct Katehakis_Veinott_Restart_Formulation
-	Q⁰::Matrix{Float64} # transition matrix for restart option
-	r⁰::Vector{Float64} # instaneous reward for restart option
-	Q¹::Matrix{Float64} # transition matrix for continuation option
-	r¹::Vector{Float64} # instaneous reward for continuation option
-	β::Float64 # discount factor
-	α::Int64 # initial start
+begin
+	### 24.1.1 Restart Formulation (Katehakis and Veinott)
+	struct Katehakis_Veinott_Restart_Formulation
+		Q⁰::Matrix{Float64} # transition matrix for restart option
+		r⁰::Vector{Float64} # instaneous reward for restart option
+		Q¹::Matrix{Float64} # transition matrix for continuation option
+		r¹::Vector{Float64} # instaneous reward for continuation option
+		β::Float64 # discount factor
+		α::Int64 # initial start
+		
+		function Katehakis_Veinott_Restart_Formulation(bp::Bandit_Process)
+			P, r, α, β = bp.P, bp.r, bp.s₀, bp.β
+			
+			Q⁰ = similar(P)
+			Q⁰ .= P[α:α, :] # each row of Q0 equal to a-th row of P
 	
-	function Katehakis_Veinott_Restart_Formulation(bp::Bandit_Process)
-		P, r, α, β = bp.P, bp.r, bp.s₀, bp.β
+			r⁰ = similar(r)
+			r⁰ .= r[α] # each element of r0 equal to a-th element of r
+	
+			Q¹ = P
+	
+			r¹ = r
+			
+			return new(Q⁰, r⁰, Q¹, r¹, β, α)
+		end
+	end
+
+	function solve(kv::Katehakis_Veinott_Restart_Formulation)
+		function f(v::Vector{Float64}, kv::Katehakis_Veinott_Restart_Formulation)
+			return max.(
+				kv.r⁰ + kv.β * kv.Q⁰ * v, 
+				kv.r¹ + kv.β * kv.Q¹ * v,
+			) # element-wise max
+		end
 		
-		Q⁰ = similar(P)
-		Q⁰ .= P[α:α, :] # each row of Q0 equal to a-th row of P
-
-		r⁰ = similar(r)
-		r⁰ .= r[α] # each element of r0 equal to a-th element of r
-
-		Q¹ = P
-
-		r¹ = r
-		
-		return new(Q⁰, r⁰, Q¹, r¹, β, α)
+		f′(v) = f(v, kv)
+		v₀ = [50.0, 50.0, 50.0, 50.0] # TODO: appropriate initialization
+		sol = fixedpoint(f′, v₀)
+		println(sol)
+		v = sol.zero
+		v = (1.0 - kv.β) * v
+		gi = v[kv.α]
 	end
 end
 
-# ╔═╡ 65f8ae54-9594-47f3-9a7c-65ffb62b09f0
-function solve(kv::Katehakis_Veinott_Restart_Formulation)
-	function f(v::Vector{Float64}, kv::Katehakis_Veinott_Restart_Formulation)
-		return max.(
-			kv.r⁰ + kv.β * kv.Q⁰ * v, 
-			kv.r¹ + kv.β * kv.Q¹ * v,
-		) # element-wise max
-	end
+# ╔═╡ 82cf9a11-e593-4535-9a40-8c99cb6df456
+begin
+	bp = Bandit_Process(
+		4,
+		[0.1 0 0.8 0.1; 0.5 0 0.1 0.4; 0.2 0.6 0 0.2; 0 0.8 0 0.2],
+		[16.0, 19.0, 30.0, 4.0],
+		2,
+		0.75
+	)
 	
-	f′(v) = f(v, kv)
-	v₀ = [50.0, 50.0, 50.0, 50.0] # TODO: appropriate initialization
-	sol = fixedpoint(f′, v₀)
-	println(sol)
-	v = sol.zero
-	v = (1.0 - kv.β) * v
-	gi = v[kv.α]
+	sol_chen_katehakis = solve(Chen_Katehakis_Linear_Programming(bp))
+	println()
+	
+	sol_katehakis_veinott = solve(Katehakis_Veinott_Restart_Formulation(bp))
+	println()
+	
+	sol_katehakis_veinott ≈ sol_chen_katehakis
 end
-
-# ╔═╡ 69f327f6-b3f9-4884-84e5-25b7dcb0dc91
-bp = Bandit_Process(
-	4,
-	[0.1 0 0.8 0.1; 0.5 0 0.1 0.4; 0.2 0.6 0 0.2; 0 0.8 0 0.2],
-	[16.0, 19.0, 30.0, 4.0],
-	2,
-	0.75
-)
-
-# ╔═╡ c67869a5-629e-4ba1-95a6-304c13311f44
-sol_chen_katehakis = solve(Chen_Katehakis_Linear_Programming(bp))
-
-# ╔═╡ 38b3cbdf-e50a-4b71-91ea-1b0a434d30fe
-sol_katehakis_veinott = solve(Katehakis_Veinott_Restart_Formulation(bp))
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -607,14 +605,8 @@ version = "17.4.0+0"
 # ╔═╡ Cell order:
 # ╠═e03bb089-a27c-453a-b4bd-d572c81efada
 # ╠═3b489649-0f47-4aec-bbee-552bf911317a
-# ╠═4b240856-19d2-499a-8ea3-db06ccd859d4
 # ╠═68a9cbec-3357-42f4-bbcb-0762e7887b9d
 # ╠═de432222-402d-4fad-bbc3-66fa5c139948
-# ╠═ea750923-f350-4cb4-b80f-7d75e28e6386
-# ╠═21b6f664-5309-4f39-94b1-33b43345347f
-# ╠═65f8ae54-9594-47f3-9a7c-65ffb62b09f0
-# ╠═69f327f6-b3f9-4884-84e5-25b7dcb0dc91
-# ╠═c67869a5-629e-4ba1-95a6-304c13311f44
-# ╠═38b3cbdf-e50a-4b71-91ea-1b0a434d30fe
+# ╠═82cf9a11-e593-4535-9a40-8c99cb6df456
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
