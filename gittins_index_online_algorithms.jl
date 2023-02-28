@@ -5,7 +5,12 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ e03bb089-a27c-453a-b4bd-d572c81efada
-using NLsolve
+begin
+	using NLsolve
+	using JuMP
+	using HiGHS
+	using LinearAlgebra
+end
 
 # ╔═╡ 64e1acc8-b743-11ed-2be1-4ff3a87d90f8
 # 24.1.1 Restart Formulation (Katehakis and Veinott)
@@ -17,6 +22,37 @@ struct Bandit_Process
 	r::Vector{Float64} # reward vector
 	s₀::Int64 # initial state
 	β::Float64 # discount factor
+end
+
+# ╔═╡ 68a9cbec-3357-42f4-bbcb-0762e7887b9d
+struct Chen_Katehakis_Linear_Programming
+	model::Model
+	
+	function Chen_Katehakis_Linear_Programming(bp::Bandit_Process)
+		m, P, r, α, β = bp.m, bp.P, bp.r, bp.s₀, bp.β
+
+		h = ones(m)
+		h[α] -= 1.0
+		c = hcat((1.0 - β) * transpose(ones(m)), [m])
+		M = hcat(diagm(h) - β * P, ones(m, 1))
+
+		model = Model()
+		@variable(model, y[1:4] >= 0.0)
+		@variable(model, z)
+		Z = transpose(hcat(transpose(y), z))
+		@constraint(model, M * Z .>= r)
+		@objective(model, Min, dot(c, Z))
+		
+		return new(model)
+	end
+end
+
+# ╔═╡ de432222-402d-4fad-bbc3-66fa5c139948
+function solve(formulation::Chen_Katehakis_Linear_Programming)
+	set_optimizer(formulation.model, HiGHS.Optimizer)
+	print(formulation.model)
+	optimize!(formulation.model)
+	return value(formulation.model[:z])
 end
 
 # ╔═╡ 21b6f664-5309-4f39-94b1-33b43345347f
@@ -44,10 +80,8 @@ struct Katehakis_Veinott_Restart_Formulation
 	end
 end
 
-# ╔═╡ e8c813d7-13f2-4719-a211-2250ea5f44d7
-function solve(bp::Bandit_Process)
-	kv = Katehakis_Veinott_Restart_Formulation(bp)
-
+# ╔═╡ 65f8ae54-9594-47f3-9a7c-65ffb62b09f0
+function solve(kv::Katehakis_Veinott_Restart_Formulation)
 	function f(v::Vector{Float64}, kv::Katehakis_Veinott_Restart_Formulation)
 		return max.(
 			kv.r⁰ + kv.β * kv.Q⁰ * v, 
@@ -61,23 +95,43 @@ function solve(bp::Bandit_Process)
 	return sol
 end
 
+# ╔═╡ cb0bb30a-1132-4dea-b31e-aeac8c70beb7
+sol_chen_katehakis = solve(
+	Chen_Katehakis_Linear_Programming(
+		Bandit_Process(
+			4,
+			[0.1 0 0.8 0.1; 0.5 0 0.1 0.4; 0.2 0.6 0 0.2; 0 0.8 0 0.2],
+			[16.0, 19.0, 30.0, 4.0],
+			2,
+			0.75
+		)
+	)
+)
+
 # ╔═╡ c67869a5-629e-4ba1-95a6-304c13311f44
-sol = solve(
-	Bandit_Process(
-		4,
-		[0.1 0 0.8 0.1; 0.5 0 0.1 0.4; 0.2 0.6 0 0.2; 0 0.8 0 0.2],
-		[16.0, 19.0, 30.0, 4.0],
-		2,
-		0.75,
+sol_katehakis_veinott = solve(
+	Katehakis_Veinott_Restart_Formulation(
+		Bandit_Process(
+			4,
+			[0.1 0 0.8 0.1; 0.5 0 0.1 0.4; 0.2 0.6 0 0.2; 0 0.8 0 0.2],
+			[16.0, 19.0, 30.0, 4.0],
+			2,
+			0.75,
+		)
 	)
 )
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+HiGHS = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 
 [compat]
+HiGHS = "~1.4.3"
+JuMP = "~1.8.2"
 NLsolve = "~4.5.1"
 """
 
@@ -87,7 +141,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "93f7b991e44b933f76d3fd91b5660258a7d76ca6"
+project_hash = "523f24526aa16a0e3fd35a98b62c26c5b54a1da3"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -111,6 +165,18 @@ uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
+[[deps.BenchmarkTools]]
+deps = ["JSON", "Logging", "Printf", "Profile", "Statistics", "UUIDs"]
+git-tree-sha1 = "d9a9701b899b30332bbcb3e1679c41cce81fb0e8"
+uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+version = "1.3.2"
+
+[[deps.Bzip2_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "19a35467a82e236ff51bc17a3a44b69ef35185a2"
+uuid = "6e34b625-4abd-537c-b88f-471c36dfa7a0"
+version = "1.0.8+0"
+
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "c6d890a52d2c4d55d326439580c3b8d0875a77d9"
@@ -122,6 +188,18 @@ deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
 git-tree-sha1 = "485193efd2176b88e6622a39a246f8c5b600e74e"
 uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
 version = "0.1.6"
+
+[[deps.CodecBzip2]]
+deps = ["Bzip2_jll", "Libdl", "TranscodingStreams"]
+git-tree-sha1 = "2e62a725210ce3c3c2e1a3080190e7ca491f18d7"
+uuid = "523fee87-0ab8-5b00-afb7-3ecf72e48cfd"
+version = "0.7.2"
+
+[[deps.CodecZlib]]
+deps = ["TranscodingStreams", "Zlib_jll"]
+git-tree-sha1 = "9c209fb7536406834aa938fb149964b985de6c83"
+uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
+version = "0.7.1"
 
 [[deps.CommonSubexpressions]]
 deps = ["MacroTools", "Test"]
@@ -145,6 +223,12 @@ deps = ["LinearAlgebra"]
 git-tree-sha1 = "89a9db8d28102b094992472d333674bd1a83ce2a"
 uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 version = "1.5.1"
+
+[[deps.DataStructures]]
+deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
+git-tree-sha1 = "d1fff3a548102f48987a52a2e0d114fa97d730f0"
+uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+version = "0.18.13"
 
 [[deps.Dates]]
 deps = ["Printf"]
@@ -202,6 +286,18 @@ version = "0.10.35"
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
+[[deps.HiGHS]]
+deps = ["HiGHS_jll", "MathOptInterface", "SnoopPrecompile", "SparseArrays"]
+git-tree-sha1 = "218ffc6232c5d590b595d8a087a50e2ccbf5a9ac"
+uuid = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
+version = "1.4.3"
+
+[[deps.HiGHS_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "17fdde1c1aa35edfd006d08f95f311ab517b3236"
+uuid = "8fd58aa0-07eb-5a78-9b36-339c94fd15ea"
+version = "1.4.2+0"
+
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -222,6 +318,18 @@ deps = ["Preferences"]
 git-tree-sha1 = "abc9885a7ca2052a736a600f7fa66209f96506e1"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
 version = "1.4.1"
+
+[[deps.JSON]]
+deps = ["Dates", "Mmap", "Parsers", "Unicode"]
+git-tree-sha1 = "3c837543ddb02250ef42f4738347454f95079d4e"
+uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+version = "0.21.3"
+
+[[deps.JuMP]]
+deps = ["LinearAlgebra", "MathOptInterface", "MutableArithmetics", "OrderedCollections", "Printf", "SnoopPrecompile", "SparseArrays"]
+git-tree-sha1 = "32cf69672323e5aff994b5962bd485dbe79a4adc"
+uuid = "4076af6c-e467-56ae-b986-b466b2749572"
+version = "1.8.2"
 
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -274,14 +382,29 @@ version = "0.5.10"
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
+[[deps.MathOptInterface]]
+deps = ["BenchmarkTools", "CodecBzip2", "CodecZlib", "DataStructures", "ForwardDiff", "JSON", "LinearAlgebra", "MutableArithmetics", "NaNMath", "OrderedCollections", "Printf", "SnoopPrecompile", "SparseArrays", "SpecialFunctions", "Test", "Unicode"]
+git-tree-sha1 = "2a58c70db9287898dcc76b8394f0ff601c11b270"
+uuid = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
+version = "1.12.0"
+
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
 version = "2.28.0+0"
 
+[[deps.Mmap]]
+uuid = "a63ad114-7e13-5084-954f-fe012c677804"
+
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 version = "2022.2.1"
+
+[[deps.MutableArithmetics]]
+deps = ["LinearAlgebra", "SparseArrays", "Test"]
+git-tree-sha1 = "3295d296288ab1a0a2528feb424b854418acff57"
+uuid = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
+version = "1.2.3"
 
 [[deps.NLSolversBase]]
 deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
@@ -332,6 +455,12 @@ git-tree-sha1 = "34c0e9ad262e5f7fc75b10a9952ca7692cfc5fbe"
 uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 version = "0.12.3"
 
+[[deps.Parsers]]
+deps = ["Dates", "SnoopPrecompile"]
+git-tree-sha1 = "6f4fbcd1ad45905a5dee3f4256fabb49aa2110c6"
+uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
+version = "2.5.7"
+
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
@@ -346,6 +475,10 @@ version = "1.3.0"
 [[deps.Printf]]
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[[deps.Profile]]
+deps = ["Printf"]
+uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -437,6 +570,12 @@ version = "1.10.1"
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
+[[deps.TranscodingStreams]]
+deps = ["Random", "Test"]
+git-tree-sha1 = "94f38103c984f89cf77c402f2a68dbd870f8165f"
+uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
+version = "0.9.11"
+
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
@@ -474,8 +613,11 @@ version = "17.4.0+0"
 # ╠═64e1acc8-b743-11ed-2be1-4ff3a87d90f8
 # ╠═e03bb089-a27c-453a-b4bd-d572c81efada
 # ╠═3b489649-0f47-4aec-bbee-552bf911317a
+# ╠═68a9cbec-3357-42f4-bbcb-0762e7887b9d
+# ╠═de432222-402d-4fad-bbc3-66fa5c139948
+# ╠═cb0bb30a-1132-4dea-b31e-aeac8c70beb7
 # ╠═21b6f664-5309-4f39-94b1-33b43345347f
-# ╠═e8c813d7-13f2-4719-a211-2250ea5f44d7
+# ╠═65f8ae54-9594-47f3-9a7c-65ffb62b09f0
 # ╠═c67869a5-629e-4ba1-95a6-304c13311f44
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
