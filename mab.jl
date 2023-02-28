@@ -25,7 +25,7 @@ begin
 	    γ::Float64 # Discount Factor
 	end
 	
-	POMDPs.states(p::MAB) = 1:prod(m) # m^n states (is why gittins index useful!)
+	POMDPs.states(p::MAB) = 1:prod(m) # m^n states (= gittins index useful!)
 	POMDPs.actions(p::MAB) = 1:n # choose to pull exactly 1 of n arms
 	
 	POMDPs.stateindex(p::MAB, s::Tuple{Int64}) = LinearIndices(m)[s...]
@@ -34,13 +34,14 @@ begin
 	POMDPs.discount(p::MAB) = p.γ
 	
 	function POMDPs.transition(p::MAB, s::Tuple{Int64}, a::Int64) 	
-		function f(i::Int64, s::Tuple{Int64})
+		function evolve_arm(s::Tuple{Int64}, a::Int64, i::Int64) 
+			# evolve arm a to state i
 			sp = [s...]
 			sp[a] = i
 			return Tuple(sp)
 		end
 		
-		states = map(i -> f(i, s), 1:m[a])
+		states = map(i -> f(s, a, i), 1:m[a])
 		probabilities = p.T[a][:, s]
 		return SparseCat(states, probabilities)
 	end
