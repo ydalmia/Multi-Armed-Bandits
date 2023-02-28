@@ -28,43 +28,53 @@ https://github.com/JuliaPOMDP/POMDPs.jl/blob/4b655ec340d22d676cb2f49d2bcb81fb954
 
 =#
 
+# ╔═╡ 99f6af7d-673e-4153-a54f-c3f86a0c8521
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	x = (1, 2, 2)
+	LinearIndices((3, 3, 3))[x...]
+end
+  ╠═╡ =#
+
 # ╔═╡ b478ad03-001f-4c12-a427-a8f3316ce22d
 begin
 	mutable struct MAB <: MDP{Int64, Int64}
 		n::Int64 # number of arms
 		m::Tuple{Int64} # state space cardinality for each arm
 	    T::Tuple{Array{Float64, 2}} # each arm has bandit process, n x Sp x S
-	    R::Tuple{Array{Float64}} # n x S
+	    r::Tuple{Array{Float64}} # n x S
 	    γ::Float64 # Discount Factor
 	end
 	
 	POMDPs.states(p::MAB) = 1:prod(m) # m^n states (is why gittins index useful!)
 	POMDPs.actions(p::MAB) = 1:n # choose to pull exactly 1 of n arms
 	
-	POMDPs.stateindex(p::MAB, s::Tuple{Int64}) = s
+	POMDPs.stateindex(p::MAB, s::Tuple{Int64}) = LinearIndices(m)[s...]
 	POMDPs.actionindex(p::MAB, a::Int64) = a
 	
 	POMDPs.discount(p::MAB) = p.γ
 	
-	function POMDPs.transition(p::MAB, s::Int64, a::Int64) 
-		# TODO:
-		spa = p.T[a][:, s] # resulting distribution for the arm we pulled 
-
-		# categorical distribution over these states:
-		# s1, ..., spa_1, ..., sn
-		# s1, ..., spa_j, ..., sn
-		# s1, ..., spa_m, ..., sn
+	function POMDPs.transition(p::MAB, s::Tuple{Int64}, a::Int64) 	
+		function f(i::Int64, s::Tuple{Int64})
+			sp = [s...]
+			sp[a] = i
+			return Tuple(sp)
+		end
 		
-		# 0 everywhere else
-		return None
+		states = map(i -> f(i, s), 1:m[a])
+		probabilities = p.T[a][:, s]
+		return SparseCat(states, probabilities)
 	end
 	
-	function POMDPs.reward(p::MAB, s::Int64, a::Int64)
-		# TODO:
-
+	function POMDPs.reward(p::MAB, s::Tuple{Int64}, a::Int64)
+		return p.r[a][s[a]]
 	end
 	
-	POMDPs.initialstate(p::MAB) = DiscreteDistribution(ones(length(states(p)))./length(states(p)))
+	function POMDPs.initialstate(p::MAB) 
+		N = length(states(p))
+		return DiscreteDistribution(ones(N)./N)
+	end 
 end
 
 # ╔═╡ 3d363373-0070-4cfb-92c0-4697fdc8e2a9
@@ -809,6 +819,7 @@ version = "17.4.0+0"
 # ╔═╡ Cell order:
 # ╠═0a68d3ba-371e-4e90-a1aa-300e51b3fe71
 # ╠═0e0a4ea6-b794-11ed-380e-af7e5a72d568
+# ╠═99f6af7d-673e-4153-a54f-c3f86a0c8521
 # ╠═b478ad03-001f-4c12-a427-a8f3316ce22d
 # ╠═3d363373-0070-4cfb-92c0-4697fdc8e2a9
 # ╠═8be55859-92c2-40c2-93c3-4f5ee23d8d4d
