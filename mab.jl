@@ -36,7 +36,7 @@ begin
 	function POMDPs.transition(p::MAB, s::Tuple{Int64}, a::Int64) 	
 		function evolve_arm(s::Tuple{Int64}, a::Int64, i::Int64) 
 			# evolve arm a to state i
-			sp = [s...]
+			sp = collect(s)
 			sp[a] = i
 			return Tuple(sp)
 		end
@@ -50,9 +50,8 @@ begin
 		return p.r[a][s[a]]
 	end
 	
-	function POMDPs.initialstate(p::MAB) 
-		N = length(states(p))
-		return DiscreteDistribution(ones(N)./N)
+	function POMDPs.initialstate(p::MAB)
+		return Tuple(zeros(Int64, p.n))
 	end 
 end
 
