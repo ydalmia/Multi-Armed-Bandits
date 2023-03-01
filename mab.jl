@@ -2,7 +2,7 @@ import POMDPs
 using POMDPs: MDP, simulate
 
 import POMDPTools
-using POMDPTools: SparseCat, RandomPolicy, RolloutSimulator
+using POMDPTools: SparseCat, RandomPolicy, RolloutSimulator, has_consistent_transition_distributions
 
 using Random
 
@@ -17,7 +17,11 @@ struct MAB <: MDP{State, Action}
 	γ::Float64 # Discount Factor
 end
 
-POMDPs.states(p::MAB) = 1:prod(p.m) # m^n states (gittins index useful!)
+function POMDPs.states(p::MAB) 
+	# m^n total states (this is why gittins index is useful!)
+	return (convert(Tuple, CartesianIndices(p.m)[i]) for i in 1:prod(p.m))
+end
+
 POMDPs.actions(p::MAB) = 1:p.n # choose to pull exactly 1 of n arms
 
 POMDPs.stateindex(p::MAB, s::State) = LinearIndices(p.m)[s...]
@@ -71,6 +75,8 @@ function testRandomMAB()
 	
 	results = simulate(sim, mdp, policy, (1, 1, 1))
 	print(results)
+
+	@assert has_consistent_transition_distributions(mdp)
 end
 
 testRandomMAB()
