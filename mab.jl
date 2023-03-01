@@ -1,5 +1,9 @@
-using POMDPs
-using POMDPTools
+import POMDPs
+using POMDPs: MDP, simulate
+
+import POMDPTools
+using POMDPTools: SparseCat, RandomPolicy, RolloutSimulator
+
 using Random
 
 State = Tuple{Vararg{Int64}}
@@ -60,10 +64,13 @@ function RandomMAB(
 	return MAB(n, m, T, r, γ)
 end
 
+function testRandomMAB()
+	mdp = RandomMAB(3, (2, 4, 7), 0.7, rng=MersenneTwister(1))
+	policy = RandomPolicy(mdp, rng=MersenneTwister(2))
+	sim = RolloutSimulator(rng=MersenneTwister(3), max_steps=100)
+	
+	results = simulate(sim, mdp, policy, (1, 1, 1))
+	print(results)
+end
 
-mdp = RandomMAB(3, (2, 4, 7), 0.7, rng=MersenneTwister(1))
-policy = RandomPolicy(mdp, rng=MersenneTwister(2))
-sim = RolloutSimulator(rng=MersenneTwister(3), max_steps=100)
-
-results = simulate(sim, mdp, policy, (1, 1, 1))
-print(results)
+testRandomMAB()
