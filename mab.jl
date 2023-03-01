@@ -2,7 +2,7 @@ import POMDPs
 using POMDPs: MDP, simulate
 
 import POMDPTools
-using POMDPTools: SparseCat, RandomPolicy, RolloutSimulator, has_consistent_transition_distributions
+using POMDPTools: Deterministic, SparseCat, RandomPolicy, RolloutSimulator, has_consistent_distributions
 
 using Random
 
@@ -47,7 +47,7 @@ function POMDPs.reward(p::MAB, s::State, a::Action)
 end
 
 function POMDPs.initialstate(p::MAB)
-	return Tuple(ones(Int64, p.n)) # s0 = (1, 1, ..., 1)
+	return Deterministic(Tuple(ones(Int64, p.n))) # s0 = (1, 1, ..., 1)
 end 
 
 function RandomMAB(
@@ -73,10 +73,10 @@ function testRandomMAB()
 	policy = RandomPolicy(mdp, rng=MersenneTwister(2))
 	sim = RolloutSimulator(rng=MersenneTwister(3), max_steps=100)
 	
+	@assert has_consistent_distributions(mdp)
+
 	results = simulate(sim, mdp, policy, (1, 1, 1))
 	print(results)
-
-	@assert has_consistent_transition_distributions(mdp)
 end
 
 testRandomMAB()
