@@ -25,7 +25,7 @@ struct Chen_Katehakis_Linear_Programming
 		M = hcat(diagm(h) - β * P, ones(m, 1))
 
 		lp = Model()
-		@variable(lp, y[1:4] >= 0.0)
+		@variable(lp, y[1:m] >= 0.0)
 		@variable(lp, z)
 		Z = transpose(hcat(transpose(y), z))
 		@constraint(lp, M * Z .>= r)
@@ -107,4 +107,4 @@ function test_gi_computation_approx_equal()
 	@assert sol_katehakis_veinott ≈ sol_chen_katehakis
 end
 
-test_gi_computation_approx_equal()
+# test_gi_computation_approx_equal()

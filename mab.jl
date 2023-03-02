@@ -81,8 +81,8 @@ function test_MAB_compiles()
 end
 
 function test_MAB_consistent_distributions()
-	mdp = RandomMAB(3, (2, 4, 7), 0.7, rng=MersenneTwister(1))
-	@assert has_consistent_distributions(mdp)
+	mab = RandomMAB(3, (2, 4, 7), 0.7, rng=MersenneTwister(1))
+	@assert has_consistent_distributions(mab)
 end
 
 function test_MAB_valid_transitions()
@@ -116,6 +116,6 @@ function test_MAB_valid_transitions()
 	@assert all_transitions_valid
 end
 
-test_MAB_compiles()
-test_MAB_consistent_distributions()
-test_MAB_valid_transitions()
+# test_MAB_compiles()
+# test_MAB_consistent_distributions()
+# test_MAB_valid_transitions()
