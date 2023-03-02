@@ -139,7 +139,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "523f24526aa16a0e3fd35a98b62c26c5b54a1da3"
+project_hash = "97ab42d2aeff924759874dc1ab161ceeefbb5393"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
