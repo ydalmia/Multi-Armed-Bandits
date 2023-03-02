@@ -4,7 +4,7 @@ using HiGHS
 using LinearAlgebra
 using Test
 
-struct Bandit_Process
+struct BanditProcess
 	m::Int64 # cardinality of state space
 	P::Matrix{Float64} # transition matrix
 	r::Vector{Float64} # reward vector
@@ -13,10 +13,10 @@ struct Bandit_Process
 end
 
 ### 24.4.2 Linear Programming Formulation (Chen and Katehakis)
-struct Chen_Katehakis_Linear_Programming
+struct ChenKatehakisLinearProgramming
 	lp::Model # linear programming model
 	
-	function Chen_Katehakis_Linear_Programming(bp::Bandit_Process)
+	function ChenKatehakisLinearProgramming(bp::BanditProcess)
 		m, P, r, α, β = bp.m, bp.P, bp.r, bp.s₀, bp.β
 
 		h = ones(m)
@@ -35,7 +35,7 @@ struct Chen_Katehakis_Linear_Programming
 	end
 end
 
-function solve(formulation::Chen_Katehakis_Linear_Programming)
+function solve(formulation::ChenKatehakisLinearProgramming)
 	set_optimizer(formulation.lp, HiGHS.Optimizer)
 	optimize!(formulation.lp)
 	gi = value(formulation.lp[:z])
@@ -44,7 +44,7 @@ end
 
 
 ### 24.1.1 Restart Formulation (Katehakis and Veinott)
-struct Katehakis_Veinott_Restart_Formulation
+struct KatehakisVeinottRestartFormulation
 	Q⁰::Matrix{Float64} # transition matrix for restart option
 	r⁰::Vector{Float64} # instaneous reward for restart option
 	Q¹::Matrix{Float64} # transition matrix for continuation option
@@ -52,7 +52,7 @@ struct Katehakis_Veinott_Restart_Formulation
 	β::Float64 # discount factor
 	α::Int64 # initial start
 	
-	function Katehakis_Veinott_Restart_Formulation(bp::Bandit_Process)
+	function KatehakisVeinottRestartFormulation(bp::BanditProcess)
 		P, r, α, β = bp.P, bp.r, bp.s₀, bp.β
 		
 		Q⁰ = similar(P)
@@ -69,8 +69,8 @@ struct Katehakis_Veinott_Restart_Formulation
 	end
 end
 
-function solve(kv::Katehakis_Veinott_Restart_Formulation)
-	function f(v::Vector{Float64}, kv::Katehakis_Veinott_Restart_Formulation)
+function solve(kv::KatehakisVeinottRestartFormulation)
+	function f(v::Vector{Float64}, kv::KatehakisVeinottRestartFormulation)
 		return max.(
 			kv.r⁰ + kv.β * kv.Q⁰ * v, 
 			kv.r¹ + kv.β * kv.Q¹ * v,
@@ -89,7 +89,7 @@ end
 
 
 function test_gi_computation_approx_equal()
-	bp = Bandit_Process(
+	bp = BanditProcess(
 		4,
 		[
 			0.1 0 0.8 0.1; 
@@ -102,8 +102,8 @@ function test_gi_computation_approx_equal()
 		0.75
 	)
 
-	sol_chen_katehakis = solve(Chen_Katehakis_Linear_Programming(bp))
-	sol_katehakis_veinott = solve(Katehakis_Veinott_Restart_Formulation(bp))
+	sol_chen_katehakis = solve(ChenKatehakisLinearProgramming(bp))
+	sol_katehakis_veinott = solve(KatehakisVeinottRestartFormulation(bp))
 	@assert sol_katehakis_veinott ≈ sol_chen_katehakis
 end
 

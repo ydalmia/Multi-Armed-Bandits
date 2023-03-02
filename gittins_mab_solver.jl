@@ -38,8 +38,8 @@ function POMDPs.solve(solver::GittinsIndexSolver, mab::MAB)
         gittins_index_table::GittinsIndexTable = Array{GittinsIndexValue}(undef, m)
         for s₀ in 1:m
             gi_s₀ = solve(
-                Chen_Katehakis_Linear_Programming(
-                    Bandit_Process(m, P, r, s₀, mab.γ)
+                ChenKatehakisLinearProgramming(
+                    BanditProcess(m, P, r, s₀, mab.γ)
                 )
             )
             gittins_index_table[s₀] = gi_s₀
