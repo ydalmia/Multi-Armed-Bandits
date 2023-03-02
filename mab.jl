@@ -2,7 +2,10 @@ import POMDPs
 using POMDPs: MDP, simulate
 
 import POMDPTools
-using POMDPTools: Deterministic, SparseCat, RandomPolicy, RolloutSimulator, has_consistent_distributions
+using POMDPTools: Deterministic, SparseCat, RandomPolicy, RolloutSimulator, has_consistent_distributions, HistoryRecorder
+
+import POMDPSimulators
+using POMDPSimulators: eachstep
 
 using Random
 
@@ -79,4 +82,20 @@ function testRandomMAB()
 	print(results)
 end
 
+function testEnvironment()
+	mdp = RandomMAB(3, (2, 4, 7), 0.7, rng=MersenneTwister(1))
+	policy = RandomPolicy(mdp, rng=MersenneTwister(2))
+	hr = HistoryRecorder(max_steps=100)
+	history = simulate(hr, mdp, policy, (1, 1, 1));
+
+	for step in eachstep(history)
+		last = collect(step.s)
+		action = step.a
+		curr = collect(step.sp)
+		# only s[a] should change after pulling arm a
+		@assert curr[1:end .!= action] == last[1:end .!= action] 
+	end
+end
+
 testRandomMAB()
+testEnvironment()
