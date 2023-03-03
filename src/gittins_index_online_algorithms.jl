@@ -1,9 +1,3 @@
-using NLsolve
-using JuMP
-using HiGHS
-using LinearAlgebra
-using Test
-
 struct BanditProcess
 	m::Int64 # cardinality of state space
 	P::Matrix{Float64} # transition matrix
@@ -38,7 +32,7 @@ end
 function solve(formulation::ChenKatehakisLinearProgramming)
 	set_optimizer(formulation.lp, HiGHS.Optimizer)
 	optimize!(formulation.lp)
-	gi = value(formulation.lp[:z])
+	gi = JuMP.value(formulation.lp[:z])
 	return gi
 end
 
@@ -86,25 +80,3 @@ function solve(kv::KatehakisVeinottRestartFormulation)
 	gi = v[kv.α]
 	return gi
 end
-
-
-function test_gi_computation_approx_equal()
-	bp = BanditProcess(
-		4,
-		[
-			0.1 0 0.8 0.1; 
-			0.5 0 0.1 0.4; 
-			0.2 0.6 0 0.2; 
-			0 0.8 0 0.2
-		],
-		[16.0, 19.0, 30.0, 4.0],
-		2,
-		0.75
-	)
-
-	sol_chen_katehakis = solve(ChenKatehakisLinearProgramming(bp))
-	sol_katehakis_veinott = solve(KatehakisVeinottRestartFormulation(bp))
-	@assert sol_katehakis_veinott ≈ sol_chen_katehakis
-end
-
-# test_gi_computation_approx_equal()

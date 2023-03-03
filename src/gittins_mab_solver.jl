@@ -1,11 +1,3 @@
-include("gittins_index_online_algorithms.jl")
-include("mab.jl")
-
-import POMDPs
-using POMDPs: Solver, Policy
-import DiscreteValueIteration
-using DiscreteValueIteration: ValueIterationSolver
-
 MABState = Tuple{Vararg{Int64}}
 BanditState = Int64
 GittinsIndexValue = Float64
@@ -51,41 +43,3 @@ function POMDPs.solve(solver::GittinsIndexSolver, mab::MAB)
         Tuple(gittins_index_table_for_each_arm)
     )
 end
-
-
-function test_gittins_index_solver()
-    mab = RandomMAB(3, (2, 4, 7), 0.7, rng=MersenneTwister(1))
-    
-    gittins_index_policy = POMDPs.solve(
-        GittinsIndexSolver(),
-        mab,
-    )
-	value_iteration_policy = POMDPs.solve(
-        ValueIterationSolver(max_iterations=100, belres=1e-6, verbose=true),
-        mab,
-    )
-
-    Random.seed!(1234)
-	gittins_index_history = simulate(
-		HistoryRecorder(max_steps=10), 
-		mab, 
-		gittins_index_policy,
-	)
-    Random.seed!(1234)
-    value_iteration_history = simulate(
-		HistoryRecorder(max_steps=10), 
-		mab, 
-		value_iteration_policy,
-	)
-
-    for (gittins_index_step, value_iteration_step) in zip(eachstep(gittins_index_history), eachstep(value_iteration_history))
-		fields = [:s, :a, :r, :sp]
-        for field in fields
-            @assert gittins_index_step[field] == value_iteration_step[field]
-        end
-        s, a, r, sp = gittins_index_step[fields]
-        println("reward $(r) received when state $(sp) was reached after action $(a) was taken in state $(s)")
-	end
-end 
-
-test_gittins_index_solver()
