@@ -55,7 +55,8 @@ end
 using Plots
 
 # ╔═╡ 678505f7-342f-48de-88bb-2d4111c4e4ee
-
+# See tables in the book: Multi-armed Bandit Allocation Indices
+# My calculation matches
 
 # ╔═╡ 578d7b95-00be-4e80-beb2-c41c8eb782c5
 function make_mab(trials, prior_p, prior_q)
